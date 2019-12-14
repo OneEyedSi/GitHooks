@@ -1,0 +1,107 @@
+#!/bin/sh
+
+# Runs the specified PowerShell Git hook script, passing through the arguments Git passes to this 
+# script.
+
+# To simplify maintenance the same common PowerShell script can be called for all Git hooks, so 
+# this script can also be used for all Git hooks without modification.
+
+# The common PowerShell script will use the name of this script file, which will be passed as an 
+# argument, to determine which module to load and run.  In this way different Git hooks can have 
+# different functionality while still calling the same common script.
+
+# =================================================================================================
+# Author:		Simon Elms
+# Version:		0.8.1 
+# Date:			8 July 2019
+# Requires:		PowerShell.exe to be on the Windows PATH
+#               Environment variable GITHOOKSDIR set, pointing to a directory containing the 
+#				PowerShell script \PowerShellHooks\PowerShellGitHookRunner.ps1
+# =================================================================================================
+ 
+# The arguments passed to the common PowerShell script:
+
+#	1) Filename of this script.  The filename will be a Git hook name, for example 
+# 		"prepare-commit-msg".  This argument is used by the common PowerShell script to determine 
+#		which module to import and run;
+
+#	2) The collection of arguments Git passed to this script.  They will be passed to the 
+#		PowerShell script unmodified, in the same order they were received from Git.
+
+# If the PowerShell script exits with a non-zero status code then the Git action that triggered 
+# this Git hook will be aborted.
+
+# =================================================================================================
+# Choice of Language in this Script:
+
+# Many scripting languages, like Python, can be run in these git hook scripts by specifying the 
+# executable in the interpreter directive at the head of the script, eg #!/usr/bin/env python .  
+# However, this doesn't work for Windows PowerShell.  The interpreter directive will run up the 
+# PowerShell executable but that will look for a file with a ".ps1" file extension.  Git hook 
+# scripts have no file extension so PowerShell will not find the target file it is looking for.
+
+# To work around this issue specify the Git hook script as a Linux shell script, and use the 
+# shell script to call a PowerShell script.
+
+# Note this issue appears to only apply to Window PowerShell (eg PowerShell 5.1).  It does not 
+# apply to PowerShell Core (PowerShell 6.x).  However, only Windows PowerShell is installed on 
+# Windows 10 by default so we shouldn't rely on PowerShell Core being present.
+
+# =================================================================================================
+
+CheckStringNotEmpty () {
+    texttotest=$1
+    errormsg=$2
+    if [ -z "$texttotest" ] 
+    then
+        echo "$errormsg"
+        exit 2
+    fi
+}
+
+TrimString () {
+    # Strip leading and trailing spaces from value supplied:
+    # This code from answer 
+    # https://unix.stackexchange.com/a/476504
+    # to Unix & Linux Stack Exchange question
+    # https://unix.stackexchange.com/questions/476455/how-to-remove-leading-and-trailing-spaces-from-a-shell-variable
+    text=$1
+    trail=${text##*[^[:blank:]]}    # get trailing space
+    text=${text%${trail}}           # remove trailing space
+    lead=${text%%[^[:blank:]]*}     # get leading space
+    text=${text#${lead}}            # remove leading space
+    
+    echo $text
+}
+
+CheckStringNotEmpty "$GITHOOKSDIR" "Environment variable GITHOOKSDIR does not exist or is not set."
+
+workingdir=`TrimString "$GITHOOKSDIR"`
+
+CheckStringNotEmpty "$workingdir" "Environment variable GITHOOKSDIR is blank (all spaces or tabs)."
+
+# Determine whether the environment variable is using forward or back slashes as path separator.  
+# Use the appropriate separator to build up the path to the PowerShell Git hook runner:
+
+separator='\'
+if [ -z "${workingdir##*/*}" ]
+then
+    separator='/'
+fi
+
+# Doesn't matter if environment variable ends with separator character or not.  Add a separator 
+# character regardless because PowerShell will treat multiple consecutive path separators as one 
+# when resolving the path.
+githookrunner="${workingdir}${separator}PowerShellHooks${separator}PowerShellGitHookRunner.ps1"
+
+# No need to test whether the Git hook runner script exists.  If it doesn't this script will 
+# exit with a non-zero status code, explaining why.
+
+echo "Calling PowerShell Git hook runner ${githookrunner}..."
+
+thisfilename=$(basename "$0")
+
+powershell.exe -ExecutionPolicy RemoteSigned -Command "$githookrunner" $thisfilename $@
+
+echo "Git hook shell script complete."
+exit 0
