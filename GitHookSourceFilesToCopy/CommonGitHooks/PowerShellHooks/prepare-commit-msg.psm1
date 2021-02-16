@@ -7,8 +7,8 @@ Author:			Simon Elms
 Requires:		PowerShell 5
                 CommonFunctions.psm1 0.8.0
                     (scripts must be in same folder as this script)
-Version:		0.9.0
-Date:			12 Dec 2019
+Version:		1.0.0
+Date:			17 Feb 2021
 
 #>
 
@@ -16,8 +16,10 @@ Import-Module (Join-Path $PSScriptRoot "CommonFunctions.psm1")
 
 $_branchNamesToIgnore = @(
                             'master',
+                            'main',
                             'develop',
-                            'integration'
+                            'integration',
+                            'temp'
                         )
 
 #region Exported Functions ************************************************************************
