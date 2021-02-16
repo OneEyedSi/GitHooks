@@ -22,8 +22,8 @@ want to overwrite the user's custom files.
 Author:			Simon Elms
 Requires:		PowerShell 5
                 Pslogg module (see https://github.com/AnotherSadGit/Pslogg_PowerShellLogger)
-Version:		0.8.2
 Date:			9 Jul 2019
+Version:		1.0.0
 #>
 
 # -------------------------------------------------------------------------------------------------

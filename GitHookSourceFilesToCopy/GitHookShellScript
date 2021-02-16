@@ -12,8 +12,8 @@
 
 # =================================================================================================
 # Author:		Simon Elms
-# Version:		0.8.1 
 # Date:			8 July 2019
+# Version:		1.0.0
 # Requires:		PowerShell.exe to be on the Windows PATH
 #               Environment variable GITHOOKSDIR set, pointing to a directory containing the 
 #				PowerShell script \PowerShellHooks\PowerShellGitHookRunner.ps1

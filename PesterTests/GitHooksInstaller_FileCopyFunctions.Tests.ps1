@@ -6,8 +6,8 @@ Tests of the functions in the GitHooksInstaller_FileCopyFunctions.ps1 file.
 Author:			Simon Elms
 Requires:		PowerShell 5
                 AssertExceptionThrown module (see https://github.com/AnotherSadGit/PesterAssertExceptionThrown)
-Version:		0.6.0
 Date:			4 Jul 2019
+Version:		1.0.0
 #>
 
 # NOTE: #Requires is not a comment, it's a requires directive.

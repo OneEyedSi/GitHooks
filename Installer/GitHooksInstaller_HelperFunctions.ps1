@@ -6,8 +6,8 @@ Helper functions for installing Git hook scripts on a user's computer.
 Author:			Simon Elms
 Requires:		PowerShell 5
                 Pslogg module (see https://github.com/AnotherSadGit/Pslogg_PowerShellLogger)
-Version:		0.7.4
 Date:			9 Jul 2019
+Version:		1.0.0
 
 #>
 

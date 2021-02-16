@@ -17,8 +17,8 @@ Author:			Simon Elms
 Requires:		PowerShell 5
                 CommonFunctions.psm1 0.8.0
                     (scripts must be in same folder as this script)
-Version:		0.8.0
 Date:			5 Jun 2019
+Version:		1.0.0
 
 This script uses the $Args built-in variable to receive the arguments passed from the calling 
 Git hook scripts in the Git repositories.  Different Git hooks have different arguments and some 

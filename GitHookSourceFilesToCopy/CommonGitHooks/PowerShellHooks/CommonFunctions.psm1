@@ -8,8 +8,8 @@ All functions in this module will be exported; none will be private.
 .NOTES
 Author:			Simon Elms
 Requires:		PowerShell 5
-Version:		0.8.0
 Date:			5 Jun 2019
+Version:		1.0.0
 
 #>
 

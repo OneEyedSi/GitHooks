@@ -6,8 +6,8 @@ Tests of the functions in the GitHooksInstaller_VersionNumberFunctions.ps1 file.
 Author:			Simon Elms
 Requires:		PowerShell 5
                 AssertExceptionThrown module (see https://github.com/AnotherSadGit/PesterAssertExceptionThrown)
-Version:		0.5.0
 Date:			1 Jul 2019
+Version:		1.0.0
 #>
 
 # NOTE: #Requires is not a comment, it's a requires directive.
