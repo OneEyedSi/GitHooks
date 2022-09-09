@@ -35,7 +35,7 @@ Param
 # Modify these variables if required:
 
 $_gitHooksDir = 'C:\GitHooks'
-$_localGitRepositoriesRootDir = 'C:\Working'
+$_localGitRepositoriesRootDir = 'C:\Working\SourceControl'
 
 # Proxy may be required when installing Pslogg logging module from PowerShell Gallery. 
 $_proxyUrl = 'http://127.0.0.1:8080'

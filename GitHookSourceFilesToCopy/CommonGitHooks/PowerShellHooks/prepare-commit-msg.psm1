@@ -5,10 +5,10 @@ PowerShell module that handles the prepare-commit-msg Git hook event.
 .NOTES
 Author:			Simon Elms
 Requires:		PowerShell 5
-                CommonFunctions.psm1 0.8.0
+                CommonFunctions.psm1 1.0.0
                     (scripts must be in same folder as this script)
-Version:		1.0.0
-Date:			17 Feb 2021
+Version:		1.1.0
+Date:			9 Sep 2022
 
 #>
 
@@ -21,6 +21,12 @@ $_branchNamesToIgnore = @(
                             'integration',
                             'temp'
                         )
+
+$_branchPrefixesToIgnore = @(
+                                'feature',
+                                'feat',
+                                'features'
+                            )
 
 #region Exported Functions ************************************************************************
 
@@ -41,18 +47,25 @@ The commit message will NOT be modified when:
     branches edit the list assigned to variable $_branchNamesToIgnore, at the head of this script;
 
     2) The commit message already has the branch name prepended (for example, if the user has 
-    manually included the branch name at the start of the message, of if the user is amending an 
+    manually included the branch name at the start of the message, or if the user is amending an 
     existing commit);
 
     3) The HEAD is a detached HEAD.  In other words, the checked out commit is not at the head of a 
-    branch.  In that case we can't read the branch name so cannot preprend it to the commit 
+    branch.  In that case we can't read the branch name so cannot prepend it to the commit 
     message;
 
     4) Modifying existing commits via an interactive rebase.
 
-For branch names based on JIRA issues, with known JIRA project names, the branch name will be 
-cleaned up before being prepended to the commit message.  For example, if the branch name 
-is "toll319_TripManifest" then the text prepended to the commit message will be "TOLL-319: ".
+For branch names starting with Jira ticket numbers, of the form "xxx-nnn" or "xxxnnn", where "xxx" 
+represents one or more letters and "nnn" represents one or more digits, only the Jira ticket 
+number will be prepended to the commit message.  Any remaining text in the branch name after the 
+digits will be ignored.  For example, if the branch name is "toll319_TripManifest" then the text 
+prepended to the commit message will be "TOLL-319: ".
+
+Similarly, known branch prefixes will be ignored.  For example, if the branch name is 
+"feature/toll319_TripManifest" then the text prepended to the commit message will be "TOLL-319: ".  
+To modify the list of prefixes to ignore, edit the list assigned to variable 
+$_branchPrefixesToIgnore, at the head of this script. 
 
 .NOTES
 
@@ -216,7 +229,7 @@ function Exit-WithSuccess ()
 Gets the prefix, based on the Git branch, that will be prepended to the Git commit message.
 
 .DESCRIPTION
-Cleans up branch names that are based on JIRA issues.  Examples:
+Cleans up branch names that are based on Jira issues.  Examples:
 
     1) Branch "toll319_TripManifest" -> prefix "TOLL-319" 
     2) Branch "Smiths-742"           -> prefix "SMITHS-742" 
@@ -229,7 +242,7 @@ will be stripped out.
 Note that the hyphen is optional in the branch name - it will be inserted into the prefix if it 
 doesn't exist in the branch name.
 
-Any branch names that don't match the JIRA issue pattern will be returned unchanged.
+Any branch names that don't match the Jira issue pattern will be returned unchanged.
 #>
 function Get-CommitMessagePrefix (
     [string]$BranchName
@@ -240,16 +253,37 @@ function Get-CommitMessagePrefix (
         return ''
     }
 
+    # Strip known prefix from branch name.
+    foreach ($prefixToIgnore in $script:_branchPrefixesToIgnore) 
+    {
+        # Regex Pattern:
+        #   ^$prefixToIgnore    Branch name starts with prefix to ignore
+        #   [/\.\-_]            A separator character.  One of: 
+        #                           / (forward slash)
+        #                           . (period)
+        #                           - (hyphen)
+        #                           _ (underscore) 
+        #   (.+)                Capture group: One or more of any characters
+        # So the prefix will only be stripped off if it's followed by a separator then 
+        # at least one further character.  Prefix by itself or prefix + separator without 
+        # any further text will not be stripped from the branch name.
+        $regexPattern = "^$prefixToIgnore[/\.\-_](.+)"
+        if ($BranchName -imatch $regexPattern)
+        {
+            $BranchName = $matches[1]
+            break
+        }
+    }
+
     # Regex Pattern:
-    #    ^\s*          Starts with zero or more whitespaces 
     #    ([A-Za-z]+)   First capture group: Matches one or more upper or lower case letters 
     #    -?            An optional "-" (hyphen)
-    #    (\d+)         Second capture group: Matches one or more digits, (JIRA issue number)
-    $regexPattern = "^\s*([A-Za-z]+)-?(\d+)"
+    #    (\d+)         Second capture group: Matches one or more digits, (Jira issue number)
+    $regexPattern = "^([A-Za-z]+)-?(\d+)"
 
     $commitMessagePrefix = $BranchName
 
-    if ($BranchName -match $regexPattern)
+    if ($BranchName -imatch $regexPattern)
     {    
         $commitMessagePrefix = "$($matches[1].ToUpper())-$($matches[2])"
     }
