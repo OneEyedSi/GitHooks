@@ -7,8 +7,8 @@ Author:			Simon Elms
 Requires:		PowerShell 5
                 CommonFunctions.psm1 1.0.0
                     (scripts must be in same folder as this script)
-Version:		1.1.2
-Date:			19 Apr 2023
+Version:		1.1.3
+Date:			21 Sep 2023
 
 #>
 
@@ -28,7 +28,8 @@ $_branchPrefixesToIgnore = @(
                                 'features',
                                 'bug',
                                 'bugs',
-                                'release'
+                                'release',
+                                'releases'
                             )
 
 #region Exported Functions ************************************************************************
