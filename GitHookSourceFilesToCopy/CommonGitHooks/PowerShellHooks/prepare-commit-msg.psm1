@@ -7,30 +7,32 @@ Author:			Simon Elms
 Requires:		PowerShell 5
                 CommonFunctions.psm1 1.0.0
                     (scripts must be in same folder as this script)
-Version:		1.1.3
-Date:			21 Sep 2023
+Version:		1.2.0
+Date:			2 Nov 2023
 
 #>
 
 Import-Module (Join-Path $PSScriptRoot "CommonFunctions.psm1")
 
 $_branchNamesToIgnore = @(
-                            'master',
-                            'main',
-                            'develop',
-                            'integration',
-                            'temp'
-                        )
+    'master',
+    'main',
+    'develop',
+    'integration',
+    'temp'
+)
 
 $_branchPrefixesToIgnore = @(
-                                'feature',
-                                'feat',
-                                'features',
-                                'bug',
-                                'bugs',
-                                'release',
-                                'releases'
-                            )
+    'feature',
+    'feat',
+    'features',
+    'bug',
+    'bugs',
+    'bugfix',
+    'bugfixes',
+    'release',
+    'releases'
+)
 
 #region Exported Functions ************************************************************************
 
@@ -91,8 +93,7 @@ function Start-GitHook (
     [string]$CommitMessageFilePath, 
     [string]$CommitType, 
     [string]$CommitHash
-)
-{
+) {
     $gitHookName = $MyInvocation.MyCommand.ModuleName
     Set-MessageHeader $gitHookName
     
@@ -100,8 +101,7 @@ function Start-GitHook (
 
     $commitMessageNotModifiedNote = 'Commit message will not be modified.'
 
-    if ([string]::IsNullOrWhiteSpace($CommitMessageFilePath))
-    {
+    if ([string]::IsNullOrWhiteSpace($CommitMessageFilePath)) {
         Exit-WithMessage "The path to the commit message temp file was not passed to the Start-GitHook function.  $commitMessageNotModifiedNote"
     }
 
@@ -109,8 +109,7 @@ function Start-GitHook (
 
     Write-OutputMessage "Commit message file path: $CommitMessageFilePath"
 
-    if ([string]::IsNullOrWhiteSpace($CommitType))
-    {
+    if ([string]::IsNullOrWhiteSpace($CommitType)) {
         Exit-WithMessage "Commit type was not passed to the Start-GitHook function.  $commitMessageNotModifiedNote"
     }
 
@@ -122,8 +121,7 @@ function Start-GitHook (
     # The --quiet option prevents it from outputting an error message.
     $branchName = (git symbolic-ref --quiet --short HEAD)
 
-    if ([string]::IsNullOrWhiteSpace($branchName))
-    {
+    if ([string]::IsNullOrWhiteSpace($branchName)) {
         Exit-WithMessage "Could not read git branch name.  $commitMessageNotModifiedNote"
     }
 
@@ -137,14 +135,12 @@ function Start-GitHook (
 
     # Don't want to add branch name to commit message if it's one of the permanent branches, 
     # like master or develop.
-    if ($branchName -in $script:_branchNamesToIgnore)
-    {
+    if ($branchName -in $script:_branchNamesToIgnore) {
         Exit-WithMessage "Committing to reserved branch $branchName.  $commitMessageNotModifiedNote"
     }
 
-    if (-not (Test-Path $CommitMessageFilePath))
-    {
-	    Exit-WithMessage "Could not find commit message temp file '$CommitMessageFilePath'.  Cannot modify commit message."
+    if (-not (Test-Path $CommitMessageFilePath)) {
+        Exit-WithMessage "Could not find commit message temp file '$CommitMessageFilePath'.  Cannot modify commit message."
     }
 
     $existingCommitMessageFileContents = Get-Content $CommitMessageFilePath
@@ -154,8 +150,7 @@ function Start-GitHook (
     Write-OutputMessage $fileContentsToDisplay -WriteFirstLineOnly
 
     # Single line commit message.
-    if ($existingCommitMessageFileContents -is [string])
-    {
+    if ($existingCommitMessageFileContents -is [string]) {
         $existingCommitMessage = $existingCommitMessageFileContents.Trim()
     
         Exit-IfEditingExistingCommit $existingCommitMessage $commitMessagePrefix
@@ -164,8 +159,7 @@ function Start-GitHook (
     }
     # Multi-line commit message.
     elseif ($existingCommitMessageFileContents -is [array] `
-    -and $existingCommitMessageFileContents.Count -gt 0)
-    {
+            -and $existingCommitMessageFileContents.Count -gt 0) {
         $existingCommitMessageFirstLine = $existingCommitMessageFileContents[0].Trim()
 
         Exit-IfEditingExistingCommit $existingCommitMessageFirstLine $commitMessagePrefix
@@ -202,10 +196,8 @@ code would result in Git aborting the action that triggered this script).
 #>
 function Exit-WithMessage (
     [string]$Message
-    )
-{
-    if (-not $Message)
-    {
+) {
+    if (-not $Message) {
         $Message = 'Commit message will not be modified.'
     }
 
@@ -223,8 +215,7 @@ Even if there is a problem with this script we don't want to abort the Git actio
 it; this script isn't that important.  So exit with status code 0 = success (any non-zero status 
 code would result in Git aborting the action that triggered this script).
 #>
-function Exit-WithSuccess ()
-{
+function Exit-WithSuccess () {
     exit 0
 }
 
@@ -233,33 +224,35 @@ function Exit-WithSuccess ()
 Gets the prefix, based on the Git branch, that will be prepended to the Git commit message.
 
 .DESCRIPTION
-Cleans up branch names that are based on Jira issues.  Examples:
+Cleans up branch names that are based on Jira issues or numeric ticket numbers.  Any known 
+branch prefixes, such as "feature" or "bug", will be stripped out.  Examples:
 
-    1) Branch "toll319_TripManifest" -> prefix "TOLL-319" 
-    2) Branch "Smiths-742"           -> prefix "SMITHS-742" 
+    1) Branch "feature/toll319_TripManifest"                    -> prefix "TOLL-319" 
+    2) Branch "Smiths-742"                                      -> prefix "SMITHS-742" 
+    3) Branch "bugfix/123456-bulkinsert-incorrect-deductions"   -> prefix "123456" 
+    4) Branch "feature/add-dashboard"                           -> prefix "add-dashboard" 
 
-The cleaned up branch names will take the form: 
+For Jira-style ticket numbers the cleaned up branch names will take the form: 
     {CAPITALIZED TEXT}-{issue number}
 Any leading spaces and any trailing non-digit characters (eg text, hyphens, underscores, spaces) 
 will be stripped out.
 
-Note that the hyphen is optional in the branch name - it will be inserted into the prefix if it 
-doesn't exist in the branch name.
+Note that for Jira-style ticket numbers the hyphen is optional in the branch name - it will be 
+inserted into the prefix that is returned if it doesn't exist in the branch name.
 
-Any branch names that don't match the Jira issue pattern will be returned unchanged.
+Any branch names that don't match either the Jira-style ticket pattern or a numeric ticket number 
+will have known branch prefixes, such as "feature" or "bug", stripped out and the remainder of 
+the branch name will be returned unchanged.
 #>
 function Get-CommitMessagePrefix (
     [string]$BranchName
-    )
-{
-    if (-not $BranchName)
-    {
+) {
+    if (-not $BranchName) {
         return ''
     }
 
     # Strip known prefix from branch name.
-    foreach ($prefixToIgnore in $script:_branchPrefixesToIgnore) 
-    {
+    foreach ($prefixToIgnore in $script:_branchPrefixesToIgnore) {
         # Regex Pattern:
         #   ^$prefixToIgnore    Branch name starts with prefix to ignore
         #   [/\.\-_]            A separator character.  One of: 
@@ -272,52 +265,57 @@ function Get-CommitMessagePrefix (
         # at least one further character.  Prefix by itself or prefix + separator without 
         # any further text will not be stripped from the branch name.
         $regexPattern = "^$prefixToIgnore[/\.\-_](.+)"
-        if ($BranchName -imatch $regexPattern)
-        {
+        if ($BranchName -imatch $regexPattern) {
             $BranchName = $matches[1]
             break
         }
     }
 
-    # Regex Pattern:
-    #    ([A-Za-z]+)   First capture group: Matches one or more upper or lower case letters 
-    #    -?            An optional "-" (hyphen)
-    #    (\d+)         Second capture group: Matches one or more digits, (Jira issue number)
+    $commitMessagePrefix = $BranchName.Trim()
+
+    # Jira-style Regex Pattern:
+    #   ^([A-Za-z]+)    First capture group at the start of the branch name: Matches one or more 
+    #                       upper or lower case letters 
+    #   -?              An optional "-" (hyphen)
+    #   (\d+)           Second capture group: Matches one or more digits, (Jira issue number)
     $regexPattern = "^([A-Za-z]+)-?(\d+)"
 
-    $commitMessagePrefix = $BranchName
-
-    if ($BranchName -imatch $regexPattern)
-    {    
+    if ($BranchName -imatch $regexPattern) {    
         $commitMessagePrefix = "$($matches[1].ToUpper())-$($matches[2])"
+        return $commitMessagePrefix.Trim()
     }
 
+    # Azure Boards workitem number / GitHub issue number Regex Pattern:
+    #   ^(\d+)          Single capture group at the start of the branch name: Matches one or more 
+    #                       digits   
+    $regexPattern = "^(\d+)"
+
+    if ($BranchName -imatch $regexPattern) {    
+        $commitMessagePrefix = $matches[1]
+    }
+    
     return $commitMessagePrefix.Trim()
 }
 
 function Exit-IfEditingExistingCommit (
     [string]$ExistingCommitMessageFirstLine,
     [string]$BranchName
-    )
-{
+) {
     $ExistingCommitMessageFirstLine = $ExistingCommitMessageFirstLine.Trim()
 
-    if ($ExistingCommitMessageFirstLine.StartsWith('fixup!'))
-    {
+    if ($ExistingCommitMessageFirstLine.StartsWith('fixup!')) {
         Write-OutputMessage 'Fixup commit message will not be modified.'
 
         exit 0
     }
     
-    if ($ExistingCommitMessageFirstLine.StartsWith('squash!'))
-    {
+    if ($ExistingCommitMessageFirstLine.StartsWith('squash!')) {
         Write-OutputMessage 'Squash commit message will not be modified.'
 
         exit 0
     }
     
-    if ($ExistingCommitMessageFirstLine.StartsWith($BranchName))
-    {
+    if ($ExistingCommitMessageFirstLine.StartsWith($BranchName)) {
         Write-OutputMessage 'Commit message already has a prefix; commit message will not be modified.'
 
         exit 0
@@ -325,23 +323,19 @@ function Exit-IfEditingExistingCommit (
 }  
 
 function Set-IndentOnFileContent (
-        $FileContents
-    )
-{
+    $FileContents
+) {
     # Won't throw error if $FileContents are an array.
-    if ([string]::IsNullOrWhiteSpace($FileContents))
-    {
+    if ([string]::IsNullOrWhiteSpace($FileContents)) {
         return ''
     }
 
-    if ($FileContents -is [string])
-    {
+    if ($FileContents -is [string]) {
         return "  $FileContents"
     }
 
-    if ($FileContents -is [array] -and $FileContents.Count -gt 0)
-    {
-        return $FileContents.ForEach({"  $_"})
+    if ($FileContents -is [array] -and $FileContents.Count -gt 0) {
+        return $FileContents.ForEach({ "  $_" })
     }
 
     return $FileContents
