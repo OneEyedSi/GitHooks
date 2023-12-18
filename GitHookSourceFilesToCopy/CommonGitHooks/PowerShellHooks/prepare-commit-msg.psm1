@@ -7,8 +7,8 @@ Author:			Simon Elms
 Requires:		PowerShell 5
                 CommonFunctions.psm1 1.0.0
                     (scripts must be in same folder as this script)
-Version:		1.2.0
-Date:			2 Nov 2023
+Version:		1.2.1
+Date:			28 Nov 2023
 
 #>
 
@@ -31,8 +31,13 @@ $_branchPrefixesToIgnore = @(
     'bugfix',
     'bugfixes',
     'release',
-    'releases'
-)
+    'releases',
+    'adhoc',
+    'hotfix',
+    'hotfixes',
+    'patch',
+    'patches',
+    'devops'
 
 #region Exported Functions ************************************************************************
 
@@ -150,7 +155,8 @@ function Start-GitHook (
     Write-OutputMessage $fileContentsToDisplay -WriteFirstLineOnly
 
     # Single line commit message.
-    if ($existingCommitMessageFileContents -is [string]) {
+    if ($existingCommitMessageFileContents -is [string])
+    {
         $existingCommitMessage = $existingCommitMessageFileContents.Trim()
     
         Exit-IfEditingExistingCommit $existingCommitMessage $commitMessagePrefix
@@ -159,7 +165,8 @@ function Start-GitHook (
     }
     # Multi-line commit message.
     elseif ($existingCommitMessageFileContents -is [array] `
-            -and $existingCommitMessageFileContents.Count -gt 0) {
+    -and $existingCommitMessageFileContents.Count -gt 0)
+    {
         $existingCommitMessageFirstLine = $existingCommitMessageFileContents[0].Trim()
 
         Exit-IfEditingExistingCommit $existingCommitMessageFirstLine $commitMessagePrefix
@@ -196,8 +203,10 @@ code would result in Git aborting the action that triggered this script).
 #>
 function Exit-WithMessage (
     [string]$Message
-) {
-    if (-not $Message) {
+    )
+{
+    if (-not $Message)
+    {
         $Message = 'Commit message will not be modified.'
     }
 
@@ -215,7 +224,8 @@ Even if there is a problem with this script we don't want to abort the Git actio
 it; this script isn't that important.  So exit with status code 0 = success (any non-zero status 
 code would result in Git aborting the action that triggered this script).
 #>
-function Exit-WithSuccess () {
+function Exit-WithSuccess ()
+{
     exit 0
 }
 
@@ -246,13 +256,16 @@ the branch name will be returned unchanged.
 #>
 function Get-CommitMessagePrefix (
     [string]$BranchName
-) {
-    if (-not $BranchName) {
+    )
+{
+    if (-not $BranchName)
+    {
         return ''
     }
 
     # Strip known prefix from branch name.
-    foreach ($prefixToIgnore in $script:_branchPrefixesToIgnore) {
+    foreach ($prefixToIgnore in $script:_branchPrefixesToIgnore) 
+    {
         # Regex Pattern:
         #   ^$prefixToIgnore    Branch name starts with prefix to ignore
         #   [/\.\-_]            A separator character.  One of: 
@@ -265,7 +278,8 @@ function Get-CommitMessagePrefix (
         # at least one further character.  Prefix by itself or prefix + separator without 
         # any further text will not be stripped from the branch name.
         $regexPattern = "^$prefixToIgnore[/\.\-_](.+)"
-        if ($BranchName -imatch $regexPattern) {
+        if ($BranchName -imatch $regexPattern)
+        {
             $BranchName = $matches[1]
             break
         }
@@ -280,7 +294,10 @@ function Get-CommitMessagePrefix (
     #   (\d+)           Second capture group: Matches one or more digits, (Jira issue number)
     $regexPattern = "^([A-Za-z]+)-?(\d+)"
 
-    if ($BranchName -imatch $regexPattern) {    
+    $commitMessagePrefix = $BranchName
+
+    if ($BranchName -imatch $regexPattern)
+    {    
         $commitMessagePrefix = "$($matches[1].ToUpper())-$($matches[2])"
         return $commitMessagePrefix.Trim()
     }
@@ -300,22 +317,26 @@ function Get-CommitMessagePrefix (
 function Exit-IfEditingExistingCommit (
     [string]$ExistingCommitMessageFirstLine,
     [string]$BranchName
-) {
+    )
+{
     $ExistingCommitMessageFirstLine = $ExistingCommitMessageFirstLine.Trim()
 
-    if ($ExistingCommitMessageFirstLine.StartsWith('fixup!')) {
+    if ($ExistingCommitMessageFirstLine.StartsWith('fixup!'))
+    {
         Write-OutputMessage 'Fixup commit message will not be modified.'
 
         exit 0
     }
     
-    if ($ExistingCommitMessageFirstLine.StartsWith('squash!')) {
+    if ($ExistingCommitMessageFirstLine.StartsWith('squash!'))
+    {
         Write-OutputMessage 'Squash commit message will not be modified.'
 
         exit 0
     }
     
-    if ($ExistingCommitMessageFirstLine.StartsWith($BranchName)) {
+    if ($ExistingCommitMessageFirstLine.StartsWith($BranchName))
+    {
         Write-OutputMessage 'Commit message already has a prefix; commit message will not be modified.'
 
         exit 0
@@ -323,18 +344,22 @@ function Exit-IfEditingExistingCommit (
 }  
 
 function Set-IndentOnFileContent (
-    $FileContents
-) {
+        $FileContents
+    )
+{
     # Won't throw error if $FileContents are an array.
-    if ([string]::IsNullOrWhiteSpace($FileContents)) {
+    if ([string]::IsNullOrWhiteSpace($FileContents))
+    {
         return ''
     }
 
-    if ($FileContents -is [string]) {
+    if ($FileContents -is [string])
+    {
         return "  $FileContents"
     }
 
-    if ($FileContents -is [array] -and $FileContents.Count -gt 0) {
+    if ($FileContents -is [array] -and $FileContents.Count -gt 0)
+    {
         return $FileContents.ForEach({ "  $_" })
     }
 
