@@ -8,13 +8,7 @@ Requires:		PowerShell 5
                 Pester v5
 Version:		2.0.0
 Date:			20 Dec 2023
-
-Since the script being tested must run as administrator, this test script must also run as 
-administrator.
 #>
-
-# NOTE: #Requires is not a comment, it's a requires directive.
-#Requires -RunAsAdministrator 
 
 BeforeAll {
     # NOTE: The script under test has to be dot sourced in a BeforeAll block, not a 
@@ -56,10 +50,7 @@ Describe 'Install-RequiredModule' {
             $securePassword = "mypassword" | ConvertTo-SecureString -asPlainText -Force
             $psCredential = New-Object System.Management.Automation.PSCredential ('MyUserName', $securePassword)
             return $psCredential
-        }  
-
-        # Mock the commands outside the It blocks as a reminder the mocked commands persist into 
-        # subsequent It blocks.
+        }
 
         Mock Get-InstalledModule {
             if ($mockState.ModuleInstalled)
@@ -69,6 +60,18 @@ Describe 'Install-RequiredModule' {
 
             return $Null
         }
+
+        Mock Get-PSRepository {
+            $trustedText = 'Trusted'
+            if (-not $mockState.RepositoryIsTrusted)
+            {
+                $trustedText = 'Untrusted'
+            }
+
+            return [pscustomobject]@{ InstallationPolicy=$trustedText }
+        }
+
+        Mock Set-PSRepository
 
         Mock Find-Module {
             if ($mockState.ModuleExistsInRepository)
@@ -107,6 +110,7 @@ Describe 'Install-RequiredModule' {
     BeforeEach {
         $mockState = @{
             ModuleInstalled                = $False  
+            RepositoryIsTrusted            = $True 
             ModuleExistsInRepository       = $True 
             InstallWithoutProxySucceeds    = $True 
             InstallWithoutProxyRaisesError = $False  
@@ -130,12 +134,28 @@ Describe 'Install-RequiredModule' {
 
     Context 'module not already installed' {
 
+        It 'does not call Set-PSRepository when repository is trusted' {
+            $mockState.RepositoryIsTrusted = $True
+
+            ExecuteInstallRequiredModule
+
+            Assert-MockCalled Set-PSRepository -Scope It -Times 0 -Exactly
+        }
+
+        It 'sets repository installation policy to Trusted when repository is untrusted' {
+            $mockState.RepositoryIsTrusted = $False
+
+            ExecuteInstallRequiredModule
+
+            Assert-MockCalled Set-PSRepository -Scope It -Times 1 -Exactly `
+                -ParameterFilter { $InstallationPolicy -eq 'Trusted' }
+        }
+
         It 'attempts to find module in repository' {
             $mockState.ModuleInstalled = $False
 
             ExecuteInstallRequiredModule
 
-            # Find-Module should not be called because it should exit before then.
             Assert-MockCalled Find-Module -Scope It -Times 1 -Exactly
         }
 
@@ -147,14 +167,15 @@ Describe 'Install-RequiredModule' {
             Assert-ExceptionThrown -WithMessage 'not found in repository'
         }
 
-        It 'attempts to install module when module found in repository' {
+        It 'attempts to install module for current user when module found in repository' {
             $mockState.ModuleInstalled = $False
             $mockState.ModuleExistsInRepository = $True
             $mockState.InstallWithoutProxySucceeds = $True
 
             ExecuteInstallRequiredModule
 
-            Assert-MockCalled Install-Module -Scope It -Times 1 -Exactly
+            Assert-MockCalled Install-Module -Scope It -Times 1 -Exactly `
+                -ParameterFilter { $Scope -eq 'CurrentUser' }
         }
     }
 
@@ -201,7 +222,7 @@ Describe 'Install-RequiredModule' {
 
     Context 'installation with proxy details' {
 
-        It 'will attempt a second installation when module not installed on the first attempt' {
+        It 'attempts a second installation when module not installed on the first attempt' {
             $mockState.ModuleInstalled = $False
             $mockState.ModuleExistsInRepository = $True
             $mockState.InstallWithoutProxyRaisesError = $True
@@ -211,7 +232,18 @@ Describe 'Install-RequiredModule' {
             Assert-MockCalled Install-Module -Scope It -Times 2 -Exactly
         }
 
-        It 'will include proxy details in second installation attempt' {
+        It 'installs module for current user only on second installation attempt' {
+            $mockState.ModuleInstalled = $False
+            $mockState.ModuleExistsInRepository = $True
+            $mockState.InstallWithoutProxyRaisesError = $True
+
+            ExecuteInstallRequiredModule
+
+            Assert-MockCalled Install-Module -Scope It -Times 2 -Exactly `
+                -ParameterFilter { $Scope -eq 'CurrentUser' }
+        }
+
+        It 'includes proxy details in second installation attempt' {
             $mockState.ModuleInstalled = $False
             $mockState.ModuleExistsInRepository = $True
             $mockState.InstallWithoutProxyRaisesError = $True
