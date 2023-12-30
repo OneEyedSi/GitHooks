@@ -5,9 +5,9 @@ Tests of the functions in the GitHooksInstaller_HelperFunctions.ps1 file.
 .NOTES
 Author:			Simon Elms
 Requires:		PowerShell 5
-                AssertExceptionThrown module (see https://github.com/AnotherSadGit/PesterAssertExceptionThrown)
-Version:		1.0.0
-Date:			1 Jul 2019
+                Pester v5
+Version:		2.0.0
+Date:			20 Dec 2023
 
 Since the script being tested must run as administrator, this test script must also run as 
 administrator.
@@ -15,90 +15,105 @@ administrator.
 
 # NOTE: #Requires is not a comment, it's a requires directive.
 #Requires -RunAsAdministrator 
-#Requires -Modules AssertExceptionThrown
 
-# Can't dot source directly using a simple relative path as relative paths are relative to the 
-# current working directory, not the directory this test file is in.  The current working 
-# directory could be anything.  So Use $PSScriptRoot to get the directory this file is in, and 
-# use a path relative to that.
-. (Join-Path $PSScriptRoot '..\Installer\GitHooksInstaller_HelperFunctions.ps1' -Resolve)
+BeforeAll {
+    # NOTE: The script under test has to be dot sourced in a BeforeAll block, not a 
+    # BeforeDiscovery block.  If placed in a BeforeDiscovery block the tests will fail.
+    # (this is in contrast to importing a module under test, which has to be done in the 
+    # BeforeDiscovery block)
 
-function GetProxyUrl ()
-{
-    return 'http://myproxy'
-}
-
-function ExecuteInstallRequiredModule ()
-{
-    $proxyUrl = GetProxyUrl
-    Install-RequiredModule -ModuleName 'TestModule' -RepositoryName 'TestRepo' `
-        -ProxyUrl $proxyUrl
-}
-
-function GetTestCredential ()
-{
-    $securePassword = "mypassword" | ConvertTo-SecureString -asPlainText -Force
-    $psCredential = New-Object System.Management.Automation.PSCredential ('MyUserName', $securePassword)
-    return $psCredential
+    # Use $PSScriptRoot so this script will always dot source the script file in the Installer 
+    # folder adjacent to the folder containing this script, regardless of the location that 
+    # Pester is invoked from:
+    #                                     {parent folder}
+    #                                             |
+    #                   -----------------------------------------------------
+    #                   |                                                   |
+    #     {folder containing this script}                                Installer folder
+    #                   |                                                   |
+    #                   |                                                   |
+    #               This script -----------> dot sources ------------->  script file under test
+    . (Join-Path $PSScriptRoot '..\Installer\GitHooksInstaller_HelperFunctions.ps1' -Resolve)
 }
 
 Describe 'Install-RequiredModule' {
     
+    BeforeAll {
+        function GetProxyUrl ()
+        {
+            return 'http://myproxy'
+        }
+
+        function ExecuteInstallRequiredModule ()
+        {
+            $proxyUrl = GetProxyUrl
+            Install-RequiredModule -ModuleName 'TestModule' -RepositoryName 'TestRepo' `
+                -ProxyUrl $proxyUrl
+        }
+
+        function GetTestCredential ()
+        {
+            $securePassword = "mypassword" | ConvertTo-SecureString -asPlainText -Force
+            $psCredential = New-Object System.Management.Automation.PSCredential ('MyUserName', $securePassword)
+            return $psCredential
+        }  
+
+        # Mock the commands outside the It blocks as a reminder the mocked commands persist into 
+        # subsequent It blocks.
+
+        Mock Get-InstalledModule {
+            if ($mockState.ModuleInstalled)
+            {
+                return 'Non-null text'
+            }
+
+            return $Null
+        }
+
+        Mock Find-Module {
+            if ($mockState.ModuleExistsInRepository)
+            {
+                return @('Non-null text')
+            }
+
+            return @()
+        }
+
+        Mock Install-Module {
+            if ($mockState.InstallWithoutProxyRaisesError)
+            {
+                $mockState.ModuleInstalled = $False
+                return Write-Error 'Error in first installation attempt'
+            }
+
+            $mockState.ModuleInstalled = $mockState.InstallWithoutProxySucceeds
+            return $Null
+        }
+
+        Mock Get-Credential { return GetTestCredential }
+
+        Mock Install-Module {
+            if ($mockState.InstallWithProxyRaisesError)
+            {
+                $mockState.ModuleInstalled = $False
+                return Write-Error 'Error in second installation attempt'
+            }
+
+            $mockState.ModuleInstalled = $mockState.InstallWithProxySucceeds
+            return $Null
+        } -ParameterFilter { $Proxy -ne $Null -and $ProxyCredential -ne $Null }
+    }
+
     BeforeEach {
         $mockState = @{
-                        ModuleInstalled = $False  
-                        ModuleExistsInRepository = $True 
-                        InstallWithoutProxySucceeds = $True 
-                        InstallWithoutProxyRaisesError = $False  
-                        InstallWithProxySucceeds = $True 
-                        InstallWithProxyRaisesError = $False  
-                    }
-    }
-
-    # Mock the commands outside the It blocks as a reminder the mocked commands persist into 
-    # subsequent It blocks.
-
-    Mock Get-InstalledModule {
-        if ($mockState.ModuleInstalled)
-        {
-            return 'Non-null text'
+            ModuleInstalled                = $False  
+            ModuleExistsInRepository       = $True 
+            InstallWithoutProxySucceeds    = $True 
+            InstallWithoutProxyRaisesError = $False  
+            InstallWithProxySucceeds       = $True 
+            InstallWithProxyRaisesError    = $False  
         }
-
-        return $Null
     }
-
-    Mock Find-Module {
-        if ($mockState.ModuleExistsInRepository)
-        {
-            return @('Non-null text')
-        }
-
-        return @()
-    }
-
-    Mock Install-Module {
-        if ($mockState.InstallWithoutProxyRaisesError)
-        {
-            $mockState.ModuleInstalled = $False
-            return Write-Error 'Error in first installation attempt'
-        }
-
-        $mockState.ModuleInstalled = $mockState.InstallWithoutProxySucceeds
-        return $Null
-    }
-
-    Mock Get-Credential { return GetTestCredential }
-
-    Mock Install-Module {
-        if ($mockState.InstallWithProxyRaisesError)
-        {
-            $mockState.ModuleInstalled = $False
-            return Write-Error 'Error in second installation attempt'
-        }
-
-        $mockState.ModuleInstalled = $mockState.InstallWithProxySucceeds
-        return $Null
-    } -ParameterFilter { $Proxy -ne $Null -and $ProxyCredential -ne $Null }
 
     Context 'module already installed' {
 
@@ -129,7 +144,7 @@ Describe 'Install-RequiredModule' {
             $mockState.ModuleExistsInRepository = $False
 
             { ExecuteInstallRequiredModule } | 
-                Assert-ExceptionThrown -WithMessage 'not found in repository'
+            Assert-ExceptionThrown -WithMessage 'not found in repository'
         }
 
         It 'attempts to install module when module found in repository' {
@@ -172,7 +187,7 @@ Describe 'Install-RequiredModule' {
             $mockState.InstallWithoutProxySucceeds = $False
 
             { ExecuteInstallRequiredModule } | 
-                Assert-ExceptionThrown -WithMessage 'Unknown error installing module'
+            Assert-ExceptionThrown -WithMessage 'Unknown error installing module'
         }
 
         It 'does not throw exception when module is listed in installed modules after installation' {
@@ -215,7 +230,7 @@ Describe 'Install-RequiredModule' {
             $mockState.InstallWithProxyRaisesError = $True
             
             { ExecuteInstallRequiredModule } | 
-                Assert-ExceptionThrown -WithMessage 'Error in second installation attempt'
+            Assert-ExceptionThrown -WithMessage 'Error in second installation attempt'
         }
 
         It 'throws exception when module is not listed in installed modules after module installation' {
@@ -227,7 +242,7 @@ Describe 'Install-RequiredModule' {
             $mockState.InstallWithProxySucceeds = $False
 
             { ExecuteInstallRequiredModule } | 
-                Assert-ExceptionThrown -WithMessage 'Unknown error installing module'
+            Assert-ExceptionThrown -WithMessage 'Unknown error installing module'
         }
 
         It 'does not throw exception when module is listed in installed modules after installation' {
@@ -243,14 +258,18 @@ Describe 'Install-RequiredModule' {
 
 Describe 'Set-File' {
 
-    Mock Write-LogMessage  
+    BeforeAll {
+        Mock Write-LogMessage  
     
-    $testFilePath = 'C:\TestFile.txt'
+        $testFilePath = 'C:\TestFile.txt'
+    }
 
     Context 'file already exists' {
-        Mock Test-Path { return $True }
-        Mock Get-Item { return (Get-ChildItem -Path 'C:\Windows' -File)[0] }
-        Mock New-Item
+        BeforeAll {
+            Mock Test-Path { return $True }
+            Mock Get-Item { return (Get-ChildItem -Path 'C:\Windows' -File)[0] }
+            Mock New-Item
+        }
 
         It 'calls Test-Path' {
             Set-File $testFilePath
@@ -269,9 +288,11 @@ Describe 'Set-File' {
     }    
 
     Context 'file does not already exist and creation fails' {
-        Mock Test-Path { return $False }
-        Mock New-Item { return $Null }
-
+        BeforeAll {
+            Mock Test-Path { return $False }
+            Mock New-Item { return $Null }
+        }
+        
         It 'calls Test-Path' {
             Set-File $testFilePath
             Assert-MockCalled Test-Path -Scope It -Times 1 -Exactly
@@ -288,6 +309,19 @@ Describe 'Set-File' {
     }
     
     Context 'file does not already exist and creation succeeds' {
+
+        BeforeAll {
+            Mock Test-Path { 
+                return $mockState.FileExists
+            }
+    
+            Mock New-Item {
+                $mockState.FileExists = $True
+    
+                return (Get-ChildItem -Path 'C:\Windows' -File)[0]
+            }
+        }
+        
         # Need the mocked Test-Path to return different values on different calls:
         # First call: Return false as file not supposed to exist;
         # Second call, after calling New-Item: Return true as file has been created.
@@ -301,20 +335,10 @@ Describe 'Set-File' {
         # use a local hashtable to record state.
         BeforeEach {
             $mockState = @{
-                            FileExists = $False    
-                        }
+                FileExists = $False    
+            }
         }
         
-        Mock Test-Path { 
-            return $mockState.FileExists
-        }
-
-        Mock New-Item {
-            $mockState.FileExists = $True
-
-            return (Get-ChildItem -Path 'C:\Windows' -File)[0]
-        }
-
         It 'calls Test-Path' {
             Set-File $testFilePath
             Assert-MockCalled Test-Path -Scope It -Times 1 -Exactly
@@ -332,9 +356,11 @@ Describe 'Set-File' {
 
     Context 'parent directory of file does not already exist' {
         
-        $testDirectoryPath = 'TestDrive:\TestDir'
-        $testFilePath = Join-Path -Path $testDirectoryPath -ChildPath 'TestFile.txt'
-
+        BeforeAll {
+            $testDirectoryPath = 'TestDrive:\TestDir'
+            $testFilePath = Join-Path -Path $testDirectoryPath -ChildPath 'TestFile.txt'
+        }
+        
         It 'returns FileInfo object' {
             Set-File $testFilePath | Should -BeOfType System.IO.FileInfo
         }
