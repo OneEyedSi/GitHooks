@@ -164,7 +164,7 @@ Describe 'Install-RequiredModule' {
             $mockState.ModuleExistsInRepository = $False
 
             { ExecuteInstallRequiredModule } | 
-            Assert-ExceptionThrown -WithMessage 'not found in repository'
+            Should -Throw -ExpectedMessage '*not found in repository*'
         }
 
         It 'attempts to install module for current user when module found in repository' {
@@ -208,7 +208,7 @@ Describe 'Install-RequiredModule' {
             $mockState.InstallWithoutProxySucceeds = $False
 
             { ExecuteInstallRequiredModule } | 
-            Assert-ExceptionThrown -WithMessage 'Unknown error installing module'
+            Should -Throw -ExpectedMessage '*Unknown error installing module*'
         }
 
         It 'does not throw exception when module is listed in installed modules after installation' {
@@ -216,7 +216,7 @@ Describe 'Install-RequiredModule' {
             $mockState.ModuleExistsInRepository = $True
             $mockState.InstallWithoutProxySucceeds = $True
 
-            { ExecuteInstallRequiredModule } | Assert-ExceptionThrown -Not
+            { ExecuteInstallRequiredModule } | Should -Not -Throw
         }
     }
 
@@ -262,7 +262,7 @@ Describe 'Install-RequiredModule' {
             $mockState.InstallWithProxyRaisesError = $True
             
             { ExecuteInstallRequiredModule } | 
-            Assert-ExceptionThrown -WithMessage 'Error in second installation attempt'
+            Should -Throw -ExpectedMessage '*Error in second installation attempt*'
         }
 
         It 'throws exception when module is not listed in installed modules after module installation' {
@@ -274,7 +274,7 @@ Describe 'Install-RequiredModule' {
             $mockState.InstallWithProxySucceeds = $False
 
             { ExecuteInstallRequiredModule } | 
-            Assert-ExceptionThrown -WithMessage 'Unknown error installing module'
+            Should -Throw -ExpectedMessage '*Unknown error installing module*'
         }
 
         It 'does not throw exception when module is listed in installed modules after installation' {
@@ -283,7 +283,7 @@ Describe 'Install-RequiredModule' {
             $mockState.InstallWithoutProxyRaisesError = $True
             $mockState.InstallWithProxySucceeds = $True
 
-            { ExecuteInstallRequiredModule } | Assert-ExceptionThrown -Not
+            { ExecuteInstallRequiredModule } | Should -Not -Throw
         }
     }
 }

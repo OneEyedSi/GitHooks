@@ -450,7 +450,7 @@ Describe 'Get-DirectoryFileRelativePath' {
         It 'throws an error when directory does not exist' {
 
             { Get-DirectoryFileRelativePath $directoryPath } | 
-            Assert-ExceptionThrown -WithMessage 'does not exist'
+            Should -Throw -ExpectedMessage '*does not exist*'
         }
     }
 
@@ -463,7 +463,7 @@ Describe 'Get-DirectoryFileRelativePath' {
 
         It 'does not throw an error' {
 
-            { Get-DirectoryFileRelativePath $directoryPath } | Assert-ExceptionThrown -Not
+            { Get-DirectoryFileRelativePath $directoryPath } | Should -Not -Throw
         }
 
         It 'resets location to original directory when finishes' {
@@ -494,27 +494,27 @@ Describe 'Get-DirectoryScriptVersion' {
         
         It 'throws error if directory path is Null' {
             { Get-DirectoryScriptVersion -DirectoryPath $Null -FileNameList $fileNameList } | 
-            Assert-ExceptionThrown -WithMessage 'Directory not specified'
+            Should -Throw -ExpectedMessage '*Directory not specified*'
         }
         
         It 'throws error if directory path is empty' {
             { Get-DirectoryScriptVersion -DirectoryPath '' -FileNameList $fileNameList } | 
-            Assert-ExceptionThrown -WithMessage 'Directory not specified'
+            Should -Throw -ExpectedMessage '*Directory not specified*'
         }
         
         It 'throws error if directory path is blank' {
             { Get-DirectoryScriptVersion -DirectoryPath '  ' -FileNameList $fileNameList } | 
-            Assert-ExceptionThrown -WithMessage 'Directory not specified'
+            Should -Throw -ExpectedMessage '*Directory not specified*'
         }
         
         It 'throws error if file name list is Null' {
             { Get-DirectoryScriptVersion -DirectoryPath $directoryPath -FileNameList $Null } | 
-            Assert-ExceptionThrown -WithMessage 'No file names specified'
+            Should -Throw -ExpectedMessage '*No file names specified*'
         }
         
         It 'throws error if file name list is empty' {
             { Get-DirectoryScriptVersion -DirectoryPath $directoryPath -FileNameList @() } | 
-            Assert-ExceptionThrown -WithMessage 'No file names specified'
+            Should -Throw -ExpectedMessage '*No file names specified*'
         }
     }
 

@@ -199,7 +199,7 @@ Describe 'Find-GitHookDirectory' {
         It 'throws exception' {
 
             { Find-GitHookDirectory -SearchRootDirectory $searchRootDirectory } |
-            Assert-ExceptionThrown -WithMessage 'not found'
+            Should -Throw -ExpectedMessage '*not found*'
         }
     }
 

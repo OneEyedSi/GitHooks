@@ -546,7 +546,7 @@ Describe 'Set-TargetFileFromSourceDirectory' {
 
             { Set-TargetFileFromSourceDirectory `
                     -SourceDirectory $sourceDirectoryPath `
-                    -TargetDirectory $targetDirectoryPath } | Assert-ExceptionThrown -WithMessage 'File not found'
+                    -TargetDirectory $targetDirectoryPath } | Should -Throw -ExpectedMessage '*File not found*'
         }
     }
 
@@ -568,7 +568,7 @@ Describe 'Set-TargetFileFromSourceDirectory' {
 
             { Set-TargetFileFromSourceDirectory `
                     -SourceDirectory $sourceDirectoryPath `
-                    -TargetDirectory $targetDirectoryPath } | Assert-ExceptionThrown -Not
+                    -TargetDirectory $targetDirectoryPath } | Should -Not -Throw
         }
     }
 
@@ -594,7 +594,7 @@ Describe 'Set-TargetFileFromSourceDirectory' {
 
             { Set-TargetFileFromSourceDirectory `
                     -SourceDirectory $sourceDirectoryPath `
-                    -TargetDirectory $targetDirectoryPath } | Assert-ExceptionThrown -Not
+                    -TargetDirectory $targetDirectoryPath } | Should -Not -Throw
         }
     }
 
@@ -619,7 +619,7 @@ Describe 'Set-TargetFileFromSourceDirectory' {
         BeforeAll {
             Mock Test-Path { return $True }
             Mock Set-File { return $True }
-            
+
             Mock Copy-Item {
                 $sourceFileFullPath = $Path
                 $targetFileFullPath = $Destination
@@ -637,7 +637,7 @@ Describe 'Set-TargetFileFromSourceDirectory' {
 
             { Set-TargetFileFromSourceDirectory `
                     -SourceDirectory $sourceDirectoryPath `
-                    -TargetDirectory $targetDirectoryPath } | Assert-ExceptionThrown -Not
+                    -TargetDirectory $targetDirectoryPath } | Should -Not -Throw
         }
     }
 }
@@ -666,7 +666,7 @@ Describe 'Get-TargetFileToUpdate' {
             
             { Get-TargetFileToUpdate -SourceFilePath $sourceFilePath `
                     -TargetFileNameList $targetFileNameList -TargetDirectory $targetDirectoryPath } | 
-            Assert-ExceptionThrown -WithMessage 'has no version number'
+                    Should -Throw -ExpectedMessage '*has no version number*'
         }
     }
 
@@ -832,7 +832,7 @@ Describe 'Set-TargetFileFromSourceFile' {
             { Set-TargetFileFromSourceFile `
                     -SourceFilePath $sourceFilePath `
                     -TargetFileNameList $targetFileNameList `
-                    -TargetDirectory $targetDirectoryPath } | Assert-ExceptionThrown -WithMessage 'not found'
+                    -TargetDirectory $targetDirectoryPath } | Should -Throw -ExpectedMessage '*not found*'
         }
     }
 
@@ -879,7 +879,7 @@ Describe 'Set-TargetFileFromSourceFile' {
             { Set-TargetFileFromSourceFile `
                     -SourceFilePath $sourceFilePath `
                     -TargetFileNameList $targetFileNameList `
-                    -TargetDirectory $targetDirectoryPath } | Assert-ExceptionThrown -Not
+                    -TargetDirectory $targetDirectoryPath } | Should -Not -Throw
         }
     }
 
@@ -908,7 +908,7 @@ Describe 'Set-TargetFileFromSourceFile' {
             { Set-TargetFileFromSourceFile `
                     -SourceFilePath $sourceFilePath `
                     -TargetFileNameList $targetFileNameList `
-                    -TargetDirectory $targetDirectoryPath } | Assert-ExceptionThrown -Not
+                    -TargetDirectory $targetDirectoryPath } | Should -Not -Throw
         }
     }
 
@@ -953,7 +953,7 @@ Describe 'Set-TargetFileFromSourceFile' {
             { Set-TargetFileFromSourceFile `
                     -SourceFilePath $sourceFilePath `
                     -TargetFileNameList $targetFileNameList `
-                    -TargetDirectory $targetDirectoryPath } | Assert-ExceptionThrown -Not
+                    -TargetDirectory $targetDirectoryPath } | Should -Not -Throw
         }
     }
 }
