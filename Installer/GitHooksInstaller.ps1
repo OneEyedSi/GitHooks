@@ -17,8 +17,8 @@ every .git\hooks folder.  If a Git hook script already exists it will not be ove
 Author:			Simon Elms
 Requires:		PowerShell 5
                 Pslogg module (see https://github.com/AnotherSadGit/Pslogg_PowerShellLogger)
-Date:			9 Jul 2019
-Version:		1.0.0
+Date:			3 Jan 2024
+Version:		1.1.0
 
 This script can either be run manually, with the variables set at the top of the script, or from 
 the command line, passing in parameter values.
