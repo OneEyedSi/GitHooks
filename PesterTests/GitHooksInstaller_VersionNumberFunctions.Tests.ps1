@@ -286,7 +286,7 @@ Describe 'Get-ScriptFileVersionString' {
             $result = Get-ScriptFileVersionString $testFilePath 
 
             $result | Should -Be $highValuedVersionString
-            Assert-MockCalled Write-LogMessage -Scope It -Times 1 `
+            Should -Invoke Write-LogMessage -Scope It -Times 1 `
                 -ParameterFilter { $Message -like 'No capture group found for regex*' } 
         }
     }           
@@ -328,7 +328,7 @@ Describe 'Convert-VersionNumberStringToArray' {
     
             if (-not [string]::IsNullOrWhiteSpace($LogMessagePattern))
             {
-                Assert-MockCalled Write-LogMessage -Scope It -Times 1 `
+                Should -Invoke Write-LogMessage -Scope It -Times 1 `
                     -ParameterFilter { $Message -like $LogMessagePattern } 
             }
         }

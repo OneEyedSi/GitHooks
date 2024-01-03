@@ -127,8 +127,8 @@ Describe 'Install-RequiredModule' {
             ExecuteInstallRequiredModule
 
             # Find-Module should not be called because it should exit before then.
-            Assert-MockCalled Find-Module -Scope It -Times 0 -Exactly
-            Assert-MockCalled Install-Module -Scope It -Times 0 -Exactly
+            Should -Invoke Find-Module -Scope It -Times 0 -Exactly
+            Should -Invoke Install-Module -Scope It -Times 0 -Exactly
         } 
     }
 
@@ -139,7 +139,7 @@ Describe 'Install-RequiredModule' {
 
             ExecuteInstallRequiredModule
 
-            Assert-MockCalled Set-PSRepository -Scope It -Times 0 -Exactly
+            Should -Invoke Set-PSRepository -Scope It -Times 0 -Exactly
         }
 
         It 'sets repository installation policy to Trusted when repository is untrusted' {
@@ -147,7 +147,7 @@ Describe 'Install-RequiredModule' {
 
             ExecuteInstallRequiredModule
 
-            Assert-MockCalled Set-PSRepository -Scope It -Times 1 -Exactly `
+            Should -Invoke Set-PSRepository -Scope It -Times 1 -Exactly `
                 -ParameterFilter { $InstallationPolicy -eq 'Trusted' }
         }
 
@@ -156,7 +156,7 @@ Describe 'Install-RequiredModule' {
 
             ExecuteInstallRequiredModule
 
-            Assert-MockCalled Find-Module -Scope It -Times 1 -Exactly
+            Should -Invoke Find-Module -Scope It -Times 1 -Exactly
         }
 
         It 'throws exception when module does not exist in repository' {
@@ -174,7 +174,7 @@ Describe 'Install-RequiredModule' {
 
             ExecuteInstallRequiredModule
 
-            Assert-MockCalled Install-Module -Scope It -Times 1 -Exactly `
+            Should -Invoke Install-Module -Scope It -Times 1 -Exactly `
                 -ParameterFilter { $Scope -eq 'CurrentUser' }
         }
     }
@@ -188,7 +188,7 @@ Describe 'Install-RequiredModule' {
 
             ExecuteInstallRequiredModule
 
-            Assert-MockCalled Install-Module -Scope It -Times 1 -Exactly
+            Should -Invoke Install-Module -Scope It -Times 1 -Exactly
         }
 
         It 'checks whether module listed in installed modules after module installation' {
@@ -198,8 +198,8 @@ Describe 'Install-RequiredModule' {
 
             ExecuteInstallRequiredModule
 
-            Assert-MockCalled Install-Module -Scope It -Times 1 -Exactly
-            Assert-MockCalled Get-InstalledModule -Scope It -Times 2 -Exactly
+            Should -Invoke Install-Module -Scope It -Times 1 -Exactly
+            Should -Invoke Get-InstalledModule -Scope It -Times 2 -Exactly
         }
 
         It 'throws exception when module is not listed in installed modules after module installation' {
@@ -229,7 +229,7 @@ Describe 'Install-RequiredModule' {
 
             ExecuteInstallRequiredModule
 
-            Assert-MockCalled Install-Module -Scope It -Times 2 -Exactly
+            Should -Invoke Install-Module -Scope It -Times 2 -Exactly
         }
 
         It 'installs module for current user only on second installation attempt' {
@@ -239,7 +239,7 @@ Describe 'Install-RequiredModule' {
 
             ExecuteInstallRequiredModule
 
-            Assert-MockCalled Install-Module -Scope It -Times 2 -Exactly `
+            Should -Invoke Install-Module -Scope It -Times 2 -Exactly `
                 -ParameterFilter { $Scope -eq 'CurrentUser' }
         }
 
@@ -251,7 +251,7 @@ Describe 'Install-RequiredModule' {
             ExecuteInstallRequiredModule
 
             $proxyUrl = GetProxyUrl
-            Assert-MockCalled Install-Module -Scope It -Times 1 -Exactly `
+            Should -Invoke Install-Module -Scope It -Times 1 -Exactly `
                 -ParameterFilter { $Proxy -eq $proxyUrl -and $ProxyCredential -ne $Null }
         }
 
@@ -305,13 +305,13 @@ Describe 'Set-File' {
 
         It 'calls Test-Path' {
             Set-File $testFilePath
-            Assert-MockCalled Test-Path -Scope It -Times 1 -Exactly
+            Should -Invoke Test-Path -Scope It -Times 1 -Exactly
         }
 
         It 'does not call New-Item' {
             Set-File $testFilePath
 
-            Assert-MockCalled New-Item -Scope It -Times 0 -Exactly
+            Should -Invoke New-Item -Scope It -Times 0 -Exactly
         }
 
         It 'returns FileInfo object' {
@@ -327,12 +327,12 @@ Describe 'Set-File' {
         
         It 'calls Test-Path' {
             Set-File $testFilePath
-            Assert-MockCalled Test-Path -Scope It -Times 1 -Exactly
+            Should -Invoke Test-Path -Scope It -Times 1 -Exactly
         }
 
         It 'calls New-Item' {
             Set-File $testFilePath
-            Assert-MockCalled New-Item -Scope It -Times 1 -Exactly
+            Should -Invoke New-Item -Scope It -Times 1 -Exactly
         }
 
         It 'returns Null' {
@@ -373,12 +373,12 @@ Describe 'Set-File' {
         
         It 'calls Test-Path' {
             Set-File $testFilePath
-            Assert-MockCalled Test-Path -Scope It -Times 1 -Exactly
+            Should -Invoke Test-Path -Scope It -Times 1 -Exactly
         }
 
         It 'calls New-Item' {
             Set-File $testFilePath
-            Assert-MockCalled New-Item -Scope It -Times 1 -Exactly
+            Should -Invoke New-Item -Scope It -Times 1 -Exactly
         }
 
         It 'returns FileInfo object' {

@@ -506,8 +506,8 @@ Describe 'Set-TargetFileFromSourceDirectory' {
             Set-TargetFileFromSourceDirectory `
                 -SourceDirectory $sourceDirectoryPath -TargetDirectory $targetDirectoryPath
 
-            Assert-MockCalled Test-Path -Scope It -Times 0 -Exactly
-            Assert-MockCalled Copy-Item -Scope It -Times 0 -Exactly
+            Should -Invoke Test-Path -Scope It -Times 0 -Exactly
+            Should -Invoke Copy-Item -Scope It -Times 0 -Exactly
         }
     }
 
@@ -526,8 +526,8 @@ Describe 'Set-TargetFileFromSourceDirectory' {
             }
             catch {}
 
-            Assert-MockCalled Test-Path -Scope It -Times 1
-            Assert-MockCalled Set-File -Scope It -Times 0 -Exactly
+            Should -Invoke Test-Path -Scope It -Times 1
+            Should -Invoke Set-File -Scope It -Times 0 -Exactly
         }
 
         It 'does not attempt to update target file' {
@@ -539,7 +539,7 @@ Describe 'Set-TargetFileFromSourceDirectory' {
             }
             catch {}
 
-            Assert-MockCalled Set-File -Scope It -Times 0 -Exactly
+            Should -Invoke Set-File -Scope It -Times 0 -Exactly
         }
 
         It 'throws exception' {
@@ -561,7 +561,7 @@ Describe 'Set-TargetFileFromSourceDirectory' {
             Set-TargetFileFromSourceDirectory `
                 -SourceDirectory $sourceDirectoryPath -TargetDirectory $targetDirectoryPath
 
-            Assert-MockCalled Get-ChildItem -Scope It -Times 0 -Exactly
+            Should -Invoke Get-ChildItem -Scope It -Times 0 -Exactly
         }
 
         It 'does not throw an exception' {
@@ -587,7 +587,7 @@ Describe 'Set-TargetFileFromSourceDirectory' {
             Set-TargetFileFromSourceDirectory `
                 -SourceDirectory $sourceDirectoryPath -TargetDirectory $targetDirectoryPath
 
-            Assert-MockCalled Copy-Item -Scope It -Times 0 -Exactly
+            Should -Invoke Copy-Item -Scope It -Times 0 -Exactly
         }
 
         It 'does not throw an exception' {
@@ -610,7 +610,7 @@ Describe 'Set-TargetFileFromSourceDirectory' {
             Set-TargetFileFromSourceDirectory `
                 -SourceDirectory $sourceDirectoryPath -TargetDirectory $targetDirectoryPath
 
-            Assert-MockCalled Copy-Item -Scope It -Times $sourceFileNamesToCopy.Count -Exactly
+            Should -Invoke Copy-Item -Scope It -Times $sourceFileNamesToCopy.Count -Exactly
         }
     }
 
@@ -811,7 +811,7 @@ Describe 'Set-TargetFileFromSourceFile' {
             }
             catch {}
 
-            Assert-MockCalled Test-Path -Scope It -Times 1
+            Should -Invoke Test-Path -Scope It -Times 1
         }
 
         It 'does not attempt to update target files' {
@@ -824,7 +824,7 @@ Describe 'Set-TargetFileFromSourceFile' {
             }
             catch {}
 
-            Assert-MockCalled Get-TargetFileToUpdate -Scope It -Times 0 -Exactly
+            Should -Invoke Get-TargetFileToUpdate -Scope It -Times 0 -Exactly
         }
 
         It 'throws exception' {
@@ -851,7 +851,7 @@ Describe 'Set-TargetFileFromSourceFile' {
                 -SourceFilePath $sourceFilePath `
                 -TargetFileNameList $targetFileNameList -TargetDirectory $targetDirectoryPath
             
-            Assert-MockCalled Set-File -Scope It -Times $targetFileNames.Count -Exactly
+            Should -Invoke Set-File -Scope It -Times $targetFileNames.Count -Exactly
         }
     }
 
@@ -871,7 +871,7 @@ Describe 'Set-TargetFileFromSourceFile' {
                 -SourceFilePath $sourceFilePath `
                 -TargetFileNameList $targetFileNameList -TargetDirectory $targetDirectoryPath
 
-            Assert-MockCalled Get-ChildItem -Scope It -Times 0 -Exactly
+            Should -Invoke Get-ChildItem -Scope It -Times 0 -Exactly
         }
 
         It 'does not throw an exception' {
@@ -900,7 +900,7 @@ Describe 'Set-TargetFileFromSourceFile' {
                 -SourceFilePath $sourceFilePath `
                 -TargetFileNameList $targetFileNameList -TargetDirectory $targetDirectoryPath
 
-            Assert-MockCalled Copy-Item -Scope It -Times 0 -Exactly
+            Should -Invoke Copy-Item -Scope It -Times 0 -Exactly
         }
 
         It 'does not throw an exception' {
@@ -943,7 +943,7 @@ Describe 'Set-TargetFileFromSourceFile' {
                 -SourceFilePath $sourceFilePath `
                 -TargetFileNameList $targetFileNameList -TargetDirectory $targetDirectoryPath
             
-            Assert-MockCalled Copy-Item -Scope It -Times $targetFileNames.Count -Exactly
+            Should -Invoke Copy-Item -Scope It -Times $targetFileNames.Count -Exactly
         }
 
         It 'always copies the same source file' {
