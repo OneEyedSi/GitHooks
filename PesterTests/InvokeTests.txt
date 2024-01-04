@@ -1,11 +1,6 @@
-For Pester v5
-=============
-
-----------------------------------------------------------------------
-NOTE: The tests must be run under an Administrator PowerShell console.
-----------------------------------------------------------------------
-
-$testFolder = 'C:\...\PowerShell\Modules\GitHooks\PesterTests\'
+Pester v5
+=========
+$testFolder = 'C:\...\PowerShell\Modules\GitHooks\PesterTests'
 
 ---------------
 # Run all tests
@@ -15,24 +10,24 @@ Invoke-Pester $testFolder -Output Detailed
 --------------------------
 # Run specified test files
 --------------------------
-Invoke-Pester "${testFolder}GitHooksInstaller_FileCopyFunctions.Tests.ps1" -Output Detailed
+Invoke-Pester "${testFolder}\GitHooksInstalller_HelperFunctions.Tests.ps1" -Output Detailed
 
-Invoke-Pester "${testFolder}GitHooksInstaller_GitHookFileFunctions.Tests.ps1" -Output Detailed
+Invoke-Pester "${testFolder}\GitHooksInstaller_VersionNumberFunctions.Tests.ps1" -Output Detailed
 
-Invoke-Pester "${testFolder}GitHooksInstaller_VersionNumberFunctions.Tests.ps1" -Output Detailed
+Invoke-Pester "${testFolder}\GitHooksInstaller_FileCopyFunctions.Tests.ps1" -Output Detailed
 
-Invoke-Pester "${testFolder}GitHooksInstalller_HelperFunctions.Tests.ps1" -Output Detailed
+Invoke-Pester "${testFolder}\GitHooksInstaller_GitHookFileFunctions.Tests.ps1" -Output Detailed
 
 -----------------------------------------------------
 # Run specified Describe block in specified test file
 -----------------------------------------------------
 # -FullNameFilter can only take the name of a Describe block, not a Context or It block
-Invoke-Pester "${testFolder}GitHooksInstaller_FileCopyFunctions.Tests.ps1" -FullNameFilter 'Set-TargetFileFromSourceDirectory' -Output Detailed
+Invoke-Pester "${testFolder}\GitHooksInstalller_HelperFunctions.Tests.ps1" -FullNameFilter 'Set-File' -Output Detailed
 
 # or:
 $config = New-PesterConfiguration
-$config.Run.Path = "${testFolder}GitHooksInstaller_FileCopyFunctions.Tests.ps1"
-$config.Filter.FullName = 'Set-TargetFileFromSourceDirectory'
+$config.Run.Path = "${testFolder}\GitHooksInstalller_HelperFunctions.Tests.ps1"
+$config.Filter.FullName = 'Set-File'
 Invoke-Pester -Configuration $config
 
 ---------------------------------------------
@@ -40,4 +35,4 @@ Invoke-Pester -Configuration $config
 ---------------------------------------------
 # EG in test file:
 #	Context 'source file does not exist' -Tag 'RunThis' { ... }
-Invoke-Pester "${testFolder}GitHooksInstaller_FileCopyFunctions.Tests.ps1" -Tag 'RunThis', 'RunThat' -Output Detailed
+Invoke-Pester "${testFolder}\GitHooksInstalller_HelperFunctions.Tests.ps1" -Tag 'RunThis', 'RunThat' -Output Detailed

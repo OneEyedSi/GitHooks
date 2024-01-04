@@ -5,189 +5,201 @@ Tests of the functions in the GitHooksInstaller_GitHookFileFunctions.ps1 file.
 .NOTES
 Author:			Simon Elms
 Requires:		PowerShell 5
-                AssertExceptionThrown module (see https://github.com/AnotherSadGit/PesterAssertExceptionThrown)
-Version:		1.0.0
-Date:			5 Jul 2019
+                Pester v5
+Version:		2.0.0
+Date:			2 Jan 2024
 #>
 
-# NOTE: #Requires is not a comment, it's a requires directive.
-#Requires -Modules AssertExceptionThrown
+BeforeAll {
+    # NOTE: The script under test has to be dot sourced in a BeforeAll block, not a 
+    # BeforeDiscovery block.  If placed in a BeforeDiscovery block the tests will fail.
+    # (this is in contrast to importing a module under test, which has to be done in the 
+    # BeforeDiscovery block)
 
-# Can't dot source directly using a simple relative path as relative paths are relative to the 
-# current working directory, not the directory this test file is in.  The current working 
-# directory could be anything.  So Use $PSScriptRoot to get the directory this file is in, and 
-# use a path relative to that.
-. (Join-Path $PSScriptRoot '..\Installer\GitHooksInstaller_GitHookFileFunctions.ps1' -Resolve)
+    # Use $PSScriptRoot so this script will always dot source the script file in the Installer 
+    # folder adjacent to the folder containing this script, regardless of the location that 
+    # Pester is invoked from:
+    #                                     {parent folder}
+    #                                             |
+    #                   -----------------------------------------------------
+    #                   |                                                   |
+    #     {folder containing this script}                                Installer folder
+    #                   |                                                   |
+    #                   |                                                   |
+    #               This script -----------> dot sources ------------->  script file under test
+    . (Join-Path $PSScriptRoot '..\Installer\GitHooksInstaller_GitHookFileFunctions.ps1' -Resolve)
 
-#region Common helper functions *******************************************************************
+    #region Common helper functions *******************************************************************
 
-function GetArrayDisplayText ([array]$Array)
-{
-    if ($Array -eq $Null)
+    function GetArrayDisplayText ([array]$Array)
     {
-        return '[NULL]'
+        if ($Array -eq $Null)
+        {
+            return '[NULL]'
+        }
+
+        if ($Array.Count -eq 0)
+        {
+            return '[EMPTY]'
+        }
+
+        return $Array -join ', '
     }
 
-    if ($Array.Count -eq 0)
+    function AssertArrayMatch ([array]$ExpectedArray, [array]$ActualArray)
     {
-        return '[EMPTY]'
-    }
+        $expectedArrayDisplayText = GetArrayDisplayText $ExpectedArray
+        $actualArrayDisplayText = GetArrayDisplayText $ActualArray
 
-    return $Array -join ', '
-}
+        if ($ExpectedArray -eq $Null)
+        {        
+            if ($ActualArray -eq $Null)
+            {
+                return
+            }
 
-function AssertArrayMatch ([array]$ExpectedArray, [array]$ActualArray)
-{
-    $expectedArrayDisplayText = GetArrayDisplayText $ExpectedArray
-    $actualArrayDisplayText = GetArrayDisplayText $ActualArray
+            throw "Expected array to be [NULL].  Actual value: $actualArrayDisplayText"
+        }
 
-    if ($ExpectedArray -eq $Null)
-    {        
         if ($ActualArray -eq $Null)
+        {
+            throw "Expected array to be $expectedArrayDisplayText.  Was actually [NULL]."
+        }
+
+        $errorMessage = "Expected array to be $expectedArrayDisplayText.  Was actually $actualArrayDisplayText."
+
+        if ($ExpectedArray.Count -ne $ActualArray.Count)
+        {
+            throw $errorMessage
+        }
+
+        # Arrays must each have the same number of elements.
+
+        if ($ExpectedArray.Count -eq 0)
         {
             return
         }
 
-        throw "Expected array to be [NULL].  Actual value: $actualArrayDisplayText"
-    }
-
-    if ($ActualArray -eq $Null)
-    {
-        throw "Expected array to be $expectedArrayDisplayText.  Was actually [NULL]."
-    }
-
-    $errorMessage = "Expected array to be $expectedArrayDisplayText.  Was actually $actualArrayDisplayText."
-
-    if ($ExpectedArray.Count -ne $ActualArray.Count)
-    {
-        throw $errorMessage
-    }
-
-    # Arrays must each have the same number of elements.
-
-    if ($ExpectedArray.Count -eq 0)
-    {
-        return
-    }
-
-    for($i = 0; $i -lt $ExpectedArray.Count; $i++)
-    {
-        if ($ExpectedArray[$i] -ne $ActualArray[$i])
+        for ($i = 0; $i -lt $ExpectedArray.Count; $i++)
         {
-            throw $errorMessage
+            if ($ExpectedArray[$i] -ne $ActualArray[$i])
+            {
+                throw $errorMessage
+            }
         }
     }
-}
 
-function GetSearchRootDirectory
-{
-    return 'TestDrive:\GitDirs'
-}
-
-function GetGitHookTestDirectories
-{
-    return @(
-                'Repo1\.git\hooks'
-                'Repo2\.git\hooks'
-            )
-}
-
-function GetNoHookTestDirectories
-{
-    return @(
-                'NoHooks1\.git'
-                'NoHooks2\.git'
-            )
-}
-
-function GetNoGitTestDirectories
-{
-    return @(
-                'NoGit1\hooks'
-                'NoGit2\hooks'
-            )
-}
-
-function GetTestDirectoryFullPaths(
-    [Switch]$IncludeGitHookDirectories,
-    [Switch]$IncludeNoHookDirectories,
-    [Switch]$IncludeNoGitDirectories
-)
-{
-    $searchRootDirectory = GetSearchRootDirectory
-
-    $relativeDirectories = @()
-    if ($IncludeGitHookDirectories)
+    function GetSearchRootDirectory
     {
-        $directories = GetGitHookTestDirectories
-        $relativeDirectories += $directories
-    }
-    if ($IncludeNoHookDirectories)
-    {
-        $directories = GetNoHookTestDirectories
-        $relativeDirectories += $directories
-    }
-    if ($IncludeNoGitDirectories)
-    {
-        $directories = GetNoGitTestDirectories
-        $relativeDirectories += $directories
+        return 'TestDrive:\GitDirs'
     }
 
-    $relativeDirectories.ForEach{ [pscustomobject]@{ ChildPath=$_ } } | 
-        Join-Path -Path $searchRootDirectory
-}
+    function GetGitHookTestDirectories
+    {
+        return @(
+            'Repo1\.git\hooks'
+            'Repo2\.git\hooks'
+        )
+    }
 
-function GetTestDirectoriesUnderRoot
-{
-    $testDirectories = GetTestDirectoryFullPaths -IncludeGitHookDirectories `
-        -IncludeNoHookDirectories -IncludeNoGitDirectories
-    return $testDirectories
-}
+    function GetNoHookTestDirectories
+    {
+        return @(
+            'NoHooks1\.git'
+            'NoHooks2\.git'
+        )
+    }
 
-function ConvertTestPathToFullPath (
-    [Parameter(
-        Mandatory=$true, 
-        ValueFromPipeline=$true)
-    ]
-    [string] $Path
+    function GetNoGitTestDirectories
+    {
+        return @(
+            'NoGit1\hooks'
+            'NoGit2\hooks'
+        )
+    }
+
+    function GetTestDirectoryFullPaths(
+        [Switch]$IncludeGitHookDirectories,
+        [Switch]$IncludeNoHookDirectories,
+        [Switch]$IncludeNoGitDirectories
     )
-{
-    process
     {
-        return $Path.Replace('TestDrive:', (Get-PSDrive TestDrive).Root)
+        $searchRootDirectory = GetSearchRootDirectory
+
+        $relativeDirectories = @()
+        if ($IncludeGitHookDirectories)
+        {
+            $directories = GetGitHookTestDirectories
+            $relativeDirectories += $directories
+        }
+        if ($IncludeNoHookDirectories)
+        {
+            $directories = GetNoHookTestDirectories
+            $relativeDirectories += $directories
+        }
+        if ($IncludeNoGitDirectories)
+        {
+            $directories = GetNoGitTestDirectories
+            $relativeDirectories += $directories
+        }
+
+        $relativeDirectories.ForEach{ [pscustomobject]@{ ChildPath = $_ } } | 
+        Join-Path -Path $searchRootDirectory
     }
-}
 
-function CreateTestDirectories
-{
-    $searchRootDirectory = GetSearchRootDirectory
-    $directoriesToCreate = GetTestDirectoriesUnderRoot
+    function GetTestDirectoriesUnderRoot
+    {
+        $testDirectories = GetTestDirectoryFullPaths -IncludeGitHookDirectories `
+            -IncludeNoHookDirectories -IncludeNoGitDirectories
+        return $testDirectories
+    }
 
-    $directoriesToCreate.ForEach{ [pscustomobject]@{ Path=$_ } } |
+    function ConvertTestPathToFullPath (
+        [Parameter(
+            Mandatory = $true, 
+            ValueFromPipeline = $true)
+        ]
+        [string] $Path
+    )
+    {
+        process
+        {
+            return $Path.Replace('TestDrive:', (Get-PSDrive TestDrive).Root)
+        }
+    }
+
+    function CreateTestDirectories
+    {
+        $searchRootDirectory = GetSearchRootDirectory
+        $directoriesToCreate = GetTestDirectoriesUnderRoot
+
+        $directoriesToCreate.ForEach{ [pscustomobject]@{ Path = $_ } } |
         New-Item -ItemType Directory
-}
+    }
 
-#endregion
+    #endregion
+}
 
 #region Tests *************************************************************************************
 
 Describe 'Find-GitHookDirectory' {
 
-    # Mock the commands outside the It blocks as a reminder the mocked commands persist into 
-    # subsequent It blocks.
+    BeforeAll {
+        Mock Write-LogMessage
 
-    Mock Write-LogMessage
-
-    $searchRootDirectory = GetSearchRootDirectory
+        $searchRootDirectory = GetSearchRootDirectory
+    }
 
     Context 'search root directory does not exist' {
 
-        Mock Test-Path { return $False }
-
+        BeforeAll {
+            Mock Test-Path { return $False }
+        }
+        
         It 'throws exception' {
 
             { Find-GitHookDirectory -SearchRootDirectory $searchRootDirectory } |
-                Assert-ExceptionThrown -WithMessage 'not found'
+            Should -Throw -ExpectedMessage '*not found*'
         }
     }
 
@@ -205,8 +217,10 @@ Describe 'Find-GitHookDirectory' {
 
     Context 'Git hook directories exist under root directory' {
 
-        CreateTestDirectories
-        
+        BeforeAll {
+            CreateTestDirectories
+        }
+
         It 'returns all Git hook directories under root directory' {
 
             $result = Find-GitHookDirectory -SearchRootDirectory $searchRootDirectory | Sort-Object

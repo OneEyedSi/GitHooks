@@ -6,16 +6,14 @@ Helper functions for installing Git hook scripts on a user's computer.
 Author:			Simon Elms
 Requires:		PowerShell 5
                 Pslogg module (see https://github.com/AnotherSadGit/Pslogg_PowerShellLogger)
-Date:			9 Jul 2019
-Version:		1.0.0
+Date:			30 Dec 2023
+Version:		2.0.0
 
 #>
 
 # -------------------------------------------------------------------------------------------------
 # NO NEED TO CHANGE ANYTHING BELOW THIS POINT, THE REMAINDER OF THE CODE IS GENERIC.
 # -------------------------------------------------------------------------------------------------
-# NOTE: #Requires is not a comment, it's a requires directive.
-#Requires -RunAsAdministrator # To install module from PowerShell Gallery.
 
 <#
 .SYNOPSIS
@@ -26,9 +24,10 @@ If the specified module is not already installed the function will attempt to in
 assuming it has direct access to the repository.  If that fails it will attempt to install the 
 module via a proxy server.
 
-.NOTES
-This function to install a module must be run under administrator privileges.
+If this function installs a module it will be installed for the current user only, not for all 
+users of the computer.
 
+.NOTES
 Cannot include logging in this function because it will be used to install the logging module 
 if it's not already installed.
 #>
@@ -45,6 +44,24 @@ function Install-RequiredModule (
     {
         return
     }
+
+    $errorHeader = "Unable to install module '$ModuleName'"
+
+    try
+    {
+        # Ensure the repository is trusted otherwise the user will get an "untrusted repository"
+        # warning message.
+        $repositoryInstallationPolicy = (Get-PSRepository -Name $RepositoryName |
+                                            Select-Object -ExpandProperty InstallationPolicy)
+        if ($repositoryInstallationPolicy -ne 'Trusted')
+        {
+            Set-PSRepository -Name $RepositoryName -InstallationPolicy Trusted
+        }
+    }
+    catch 
+    {
+        throw "${errorHeader}: Module repository '$RepositoryName' not found.  Exiting."
+    }
     
     # Repository probably has too many modules to enumerate them all to find the name.  So call 
     # "Find-Module -Repository $RepositoryName -Name $ModuleName" which will raise a 
@@ -55,43 +72,42 @@ function Install-RequiredModule (
     if ((Find-Module -Repository $RepositoryName -Name $ModuleName `
         -ErrorAction SilentlyContinue -WarningAction SilentlyContinue).Count -eq 0)
     {
-        throw "Module '$ModuleName' not found in repository '$RepositoryName'.  Exiting."
+        throw "${errorHeader}: Module '$ModuleName' not found in repository '$RepositoryName'.  Exiting."
     }
-    
-    # If Install-Module fails because it's behind a proxy we want to fail silently, without 
-    # displaying anything in console to scare the user.  Errors from Install-Module are 
-    # non-terminating.  They won't be caught using try - catch unless ErrorAction is set to Stop. 
     
     try
     {
+        # If Install-Module fails because it's behind a proxy we want to fail silently, without 
+        # displaying anything in console to scare the user.  
+        # Errors from Install-Module are non-terminating.  They won't be caught using try - catch 
+        # unless ErrorAction is set to Stop. 
         Install-Module -Name $ModuleName -Repository $RepositoryName `
-            -ErrorAction Stop -WarningAction SilentlyContinue
-
-        $errorOnDirectInstall = $False
+            -Scope CurrentUser -ErrorAction Stop -WarningAction SilentlyContinue
     }
     catch 
     {
-        $errorOnDirectInstall = $True
-    }
+        # Try again, this time with proxy details, if we have them.
 
-    if ($errorOnDirectInstall)
-    {
-        # Try again, this time with proxy details.
+        if ([string]::IsNullOrWhiteSpace($ProxyUrl))
+        {
+            throw "${errorHeader}: Unable to install module directly and no proxy server details supplied.  Exiting."
+        }
 
         $proxyCredential = Get-Credential -Message 'Please enter credentials for proxy server'
 
         # No need to Silently Continue this time.  We want to see the error details.  Convert 
         # non-terminating errors to terminating via ErrorAction Stop.   
         Install-Module -Name $ModuleName -Repository $RepositoryName `
-            -Proxy $ProxyUrl -ProxyCredential $proxyCredential -ErrorAction Stop
+            -Proxy $ProxyUrl -ProxyCredential $proxyCredential `
+            -Scope CurrentUser -ErrorAction Stop
     }
 
     if (-not (Get-InstalledModule -Name $ModuleName -ErrorAction SilentlyContinue))
     {
-        throw "Unknown error installing module '$ModuleName' from repository '$RepositoryName'.  Exiting."
+        throw "${errorHeader}: Unknown error installing module from repository '$RepositoryName'.  Exiting."
     }
 
-    Write-Output "Module '$ModuleName' successfully installed from repository '$RepositoryName'."
+    Write-Output "Module '$ModuleName' successfully installed."
 }
 
 <#
