@@ -50,13 +50,21 @@ function Write-OutputMessage (
         $MessageHeader = Get-MessageHeader
     }
 
-    if ([string]::IsNullOrWhiteSpace($MessageHeader))
+    $rawHeader = $MessageHeader
+
+    if ([string]::IsNullOrWhiteSpace($rawHeader))
     {
-        $MessageHeader = ''
+        $rawHeader = ''
     }
     else
     {
-        $MessageHeader = "$($MessageHeader.Trim()): "
+        $rawHeader = $MessageHeader.Trim()
+    }
+
+    $MessageHeader = $rawHeader
+    if ($MessageHeader)
+    {
+        $MessageHeader = "$($MessageHeader): "
     }
 
     if ($Message -is [string])
@@ -80,7 +88,15 @@ function Write-OutputMessage (
 
                 if ($WriteFirstLineOnly)
                 {
-                    Write-Output "$MessageHeader  ..."
+                    if ($MessageHeader)
+                    {
+                        Write-Output "$MessageHeader..."
+                    }
+                    else 
+                    {
+                        Write-Output "..."
+                    }
+
                     Break
                 }
             }
@@ -89,7 +105,7 @@ function Write-OutputMessage (
         return
     }
 
-    Write-Output $MessageHeader
+    Write-Output $rawHeader
 }
 
 <#

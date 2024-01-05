@@ -18,6 +18,10 @@ Invoke-Pester "${testFolder}\GitHooksInstaller_FileCopyFunctions.Tests.ps1" -Out
 
 Invoke-Pester "${testFolder}\GitHooksInstaller_GitHookFileFunctions.Tests.ps1" -Output Detailed
 
+Invoke-Pester "${testFolder}\GitHooksRunner_CommonFunctions.Tests.ps1" -Output Detailed
+
+Invoke-Pester "${testFolder}\GitHooksRunner_prepare-commit-msg.Tests.ps1" -Output Detailed
+
 -----------------------------------------------------
 # Run specified Describe block in specified test file
 -----------------------------------------------------
@@ -34,5 +38,5 @@ Invoke-Pester -Configuration $config
 # Run specified Context or It blocks via Tags
 ---------------------------------------------
 # EG in test file:
-#	Context 'Parameter set "AllSettings"' -Tag 'RunThis' { ... }
+#	Context 'source file does not exist' -Tag 'RunThis' { ... }
 Invoke-Pester "${testFolder}\GitHooksInstalller_HelperFunctions.Tests.ps1" -Tag 'RunThis', 'RunThat' -Output Detailed
