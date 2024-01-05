@@ -20,6 +20,8 @@ Invoke-Pester "${testFolder}\GitHooksInstaller_GitHookFileFunctions.Tests.ps1" -
 
 Invoke-Pester "${testFolder}\GitHooksRunner_CommonFunctions.Tests.ps1" -Output Detailed
 
+Invoke-Pester "${testFolder}\GitHooksRunner_prepare-commit-msg.Tests.ps1" -Output Detailed
+
 -----------------------------------------------------
 # Run specified Describe block in specified test file
 -----------------------------------------------------
