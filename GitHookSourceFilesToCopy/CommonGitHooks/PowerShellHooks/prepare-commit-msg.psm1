@@ -7,8 +7,8 @@ Author:			Simon Elms
 Requires:		PowerShell 5
                 CommonFunctions.psm1 1.0.0
                     (scripts must be in same folder as this script)
-Version:		1.3.0
-Date:			30 Dec 2023
+Version:		1.3.1
+Date:			6 Jan 2024
 
 #>
 
@@ -127,9 +127,8 @@ function Start-GitHook
 
     Write-OutputMessage "Commit type: $CommitType"
 
-    # If the currently checked out commit is not the HEAD of a branch then this will return $Null.
-    # The --quiet option prevents it from outputting an error message.
-    $branchName = (git symbolic-ref --quiet --short HEAD)
+    # If the currently checked out commit is not the HEAD of a branch then branch name will be $Null.
+    $branchName = Get-BranchName
 
     if ([string]::IsNullOrWhiteSpace($branchName))
     {
@@ -235,6 +234,21 @@ code would result in Git aborting the action that triggered this script).
 function Exit-WithSuccess ()
 {
     exit 0
+}
+
+<#
+.SYNOPSIS
+Gets the name of the Git branch that is currently checked out.
+
+.DESCRIPTION
+If the currently checked out commit is the HEAD of a branch then the branch name will be returned. 
+If the currently checked out commit is not the HEAD of a branch then $Null will be returned.
+#>
+function Get-BranchName ()
+{
+    # The --quiet option prevents it from outputting an error message.
+    $branchName = (git symbolic-ref --quiet --short HEAD)
+    return $branchName
 }
 
 <#
@@ -388,7 +402,7 @@ function Get-CommitMessagePrefix (
 
 function Exit-IfEditingExistingCommit (
     [string]$ExistingCommitMessageFirstLine,
-    [string]$BranchName
+    [string]$CommitMessagePrefix
 )
 {
     $ExistingCommitMessageFirstLine = $ExistingCommitMessageFirstLine.Trim()
@@ -397,21 +411,21 @@ function Exit-IfEditingExistingCommit (
     {
         Write-OutputMessage 'Fixup commit message will not be modified.'
 
-        exit 0
+        Exit-WithSuccess
     }
     
     if ($ExistingCommitMessageFirstLine.StartsWith('squash!'))
     {
         Write-OutputMessage 'Squash commit message will not be modified.'
 
-        exit 0
+        Exit-WithSuccess
     }
     
-    if ($ExistingCommitMessageFirstLine.StartsWith($BranchName))
+    if ($ExistingCommitMessageFirstLine.StartsWith($CommitMessagePrefix))
     {
         Write-OutputMessage 'Commit message already has a prefix; commit message will not be modified.'
 
-        exit 0
+        Exit-WithSuccess
     }
 }  
 
