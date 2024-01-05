@@ -12,8 +12,8 @@
 
 # =================================================================================================
 # Author:		Simon Elms
-# Date:			8 July 2019
-# Version:		1.0.0
+# Date:			6 Jan 2024
+# Version:		2.0.0
 # Requires:		PowerShell.exe to be on the Windows PATH
 #               Environment variable GITHOOKSDIR set, pointing to a directory containing the 
 #				PowerShell script \PowerShellHooks\PowerShellGitHookRunner.ps1
@@ -44,18 +44,19 @@
 # shell script to call a PowerShell script.
 
 # Note this issue appears to only apply to Window PowerShell (eg PowerShell 5.1).  It does not 
-# apply to PowerShell Core (PowerShell 6.x).  However, only Windows PowerShell is installed on 
+# apply to PowerShell Core (PowerShell 6+).  However, only Windows PowerShell is installed on 
 # Windows 10 by default so we shouldn't rely on PowerShell Core being present.
 
 # =================================================================================================
 
-CheckStringNotEmpty () {
+CheckEnvVariable () {
     texttotest=$1
     errormsg=$2
     if [ -z "$texttotest" ] 
     then
         echo "$errormsg"
-        exit 2
+		# Windows error 10: ERROR_BAD_ENVIRONMENT
+        exit 10
     fi
 }
 
@@ -74,11 +75,11 @@ TrimString () {
     echo $text
 }
 
-CheckStringNotEmpty "$GITHOOKSDIR" "Environment variable GITHOOKSDIR does not exist or is not set."
+CheckEnvVariable "$GITHOOKSDIR" "Environment variable GITHOOKSDIR does not exist or is not set."
 
 workingdir=`TrimString "$GITHOOKSDIR"`
 
-CheckStringNotEmpty "$workingdir" "Environment variable GITHOOKSDIR is blank (all spaces or tabs)."
+CheckEnvVariable "$workingdir" "Environment variable GITHOOKSDIR is blank (all spaces or tabs)."
 
 # Determine whether the environment variable is using forward or back slashes as path separator.  
 # Use the appropriate separator to build up the path to the PowerShell Git hook runner:
