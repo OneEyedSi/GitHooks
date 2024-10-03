@@ -7,8 +7,8 @@ Author:			Simon Elms
 Requires:		PowerShell 5
                 CommonFunctions.psm1 1.0.0
                     (scripts must be in same folder as this script)
-Version:		1.3.1
-Date:			6 Jan 2024
+Version:		1.3.2
+Date:			3 Oct 2024
 
 #>
 
@@ -37,7 +37,8 @@ $_branchPrefixesToIgnore = @(
     'hotfixes',
     'patch',
     'patches',
-    'devops'
+    'devops',
+    'cherrypick'
 )
 
 #region Exported Functions ************************************************************************
